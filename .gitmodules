@@ -1,0 +1,7 @@
+[submodule "google"]
+	path = google
+	url = git@github.com:Lorioux/google-provider.git
+[submodule "beta"]
+	path = beta
+	url = git@github.com:Lorioux/google-beta.git
+	branch = main
