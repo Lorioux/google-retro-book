@@ -21,7 +21,7 @@ type TFResourceFactory interface {
 		|--Orgpolicy/ 	# service_name e.g orgpolicy.googleapis.com/Policy
 		|  |--*.tf
 	*/
-	CheckDirectoryExists() (string, bool) // create the directory IF NOT EXISTS returning the PATH and BOOL
+	CheckDirectoryExistsOrCreate(p string) bool // create the directory IF NOT EXISTS returning the PATH and BOOL
 
 	/*Check if resource catalog file's exists
 	 For instance, a resource catalog file correspond to resource (e.g. compute.googlepais.com/[Instance|Network]) part: "Instance or Network"
@@ -34,16 +34,7 @@ type TFResourceFactory interface {
 		|  |--Dns/              # service_name e.g dns.googlepais.com/Policy
 		|  |  |--Policy.tf      # resource catalog as terraform configuration file *.tf
 	*/
-	CheckTFResourceTypeFileExists () bool
-
-	/*Check if terraform resource import meta mappings file's exists
-	 For instance, a resource catalog file correspond to resource (e.g. compute.googlepais.com/[Instance|Network]) part: "Instance or Network"
-	 Example 1:
-		/Projects/
-		|--CloudLabs/       # project_name
-		|  |--meta_mappings # TF importing meta mappings file 
-	*/
-	CheckTFImportMetaFileExists () bool
+	CheckTFResourceTypeFileExistsOrCreate () bool
 
 	/* Construct the TF Google resource and append into the TF Resource Type File
 	   For instance, a TF resource construct will have "[name]" and "[parent]" fields provided by Asset listing output.
@@ -86,7 +77,19 @@ type TFResourceType struct {
 	required_fields map[string]interface{}
 }
 
+var ancestors string
+
 /**
 * Let resource be asset of type e.g. compute.googlepais.com/Instance, therefore:
-* 	1. Let name be string formatted as "projects/{project_id}/zones/{zone_name}/instances/[name]"
+* 	1. Let name be string formatted as "projects/{project_id}/zones/{zone_name}/instances/[name]", and
+*   2. Let required_fields be a map of key=value, where key is a required fields different to [name and parent]. And
+*   3. Let parent be (optional) e.g. projects/{project_id}, so
+* So, there should be a parent folder where:
+	1. Folder name is "Compute", so it should have a file with:
+	2. File name is "Instance.tf"
 */
+
+func (TFResourceType) CheckDirectoryExists() bool {
+	// TODO
+	return true
+}

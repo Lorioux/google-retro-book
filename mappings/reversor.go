@@ -41,6 +41,10 @@ func ReadFileDoReverse(scfile string, dsfile string) {
 	if err != nil {
 		fmt.Print(err)
 	}
-    dsfile = scfile
-	os.WriteFile(dsfile, data, 0777)
+    // dsfile = scfile
+	if err:= os.WriteFile(scfile, data, 0777); err != nil {
+        fmt.Printf("There was an error: %v", err)
+    }
+
+    // fmt.Println("Done!")
 }

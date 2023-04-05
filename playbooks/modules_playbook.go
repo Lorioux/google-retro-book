@@ -1,6 +1,5 @@
 package playbooks
 
-import "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/source"
 
 type TFImportModulesFactory interface{
 	/*Check  TF importing resource meta file EXISTS OR CREATE NEW.
