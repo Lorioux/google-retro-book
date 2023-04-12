@@ -1,5 +1,14 @@
 package playbooks
 
+import (
+	"log"
+	"mappings"
+	"os"
+	"path"
+	"strings"
+	"text/template"
+)
+
 
 
 
@@ -21,7 +30,7 @@ type TFResourceFactory interface {
 		|--Orgpolicy/ 	# service_name e.g orgpolicy.googleapis.com/Policy
 		|  |--*.tf
 	*/
-	CheckDirectoryExistsOrCreate(p string) bool // create the directory IF NOT EXISTS returning the PATH and BOOL
+	CheckDirectoryExistsOrCreate(root string, relative string) bool // create the directory IF NOT EXISTS returning the PATH and BOOL
 
 	/*Check if resource catalog file's exists
 	 For instance, a resource catalog file correspond to resource (e.g. compute.googlepais.com/[Instance|Network]) part: "Instance or Network"
@@ -61,20 +70,19 @@ type TFResourceFactory interface {
 		}
 	*/
 	ConstructTFGCPResource() string
-	
 
 	/* Reconstruct TF Google resource based on the import state values
 	*/
 
+	ConstructTFResourceTemplate () string
 }
 
 
-
-
 type TFResourceType struct {
-	parent string     
-	name string 
-	required_fields map[string]interface{}
+	Parent string     
+	Name string 
+	RequiredFields []string // map[string]interface{}
+	TfrName string 
 }
 
 var ancestors string
@@ -89,7 +97,71 @@ var ancestors string
 	2. File name is "Instance.tf"
 */
 
-func (TFResourceType) CheckDirectoryExists() bool {
-	// TODO
+func (tfr *TFResourceType) CheckDirectoryExistsOrCreate(root string, relative string) bool {
+	// TODO: Concatenate the root and relative path  then test if exists
+	// TODO: Create the tree IF NOT EXIST
+	base := path.Join(root, relative)
+	if _, err := os.ReadDir(base); err != nil {
+		// log.Printf("Null dir: %v --- %v", err, entries)
+		if err  := os.MkdirAll(base, 0777); err == nil {
+			log.Print("Created directory tree")
+		}
+	}
 	return true
 }
+
+func (tfr *TFResourceType) SetRequiredFields (assetType string) {
+	tfrType := mappings.MatchTFRNameByCloudRSType(assetType)
+	if tfrType == nil {
+		return
+	}
+	if rq, err := mappings.PickResourceRequiredFieldsByTFRName(tfrType.(string)); err == nil {
+		tfr.RequiredFields = rq
+	} else {
+		return
+	}
+	// log.Printf("REQUIRED: %v", tfr.required_fields)
+	// if strings.EqualFold(tfrType.(string), "google_compute_instance") {
+		tfr.TfrName = tfrType.(string)
+		tfr.ConstructTFResourceTemplate(tfrType.(string))
+	// }
+}
+
+
+
+func (tfr TFResourceType) ConstructTFResourceTemplate (tfrName string) string {
+	const form = `
+	{{block "main" .}}
+	resource "{{.TfrName}}" {
+		{{$name := .Name}}{{$parent := .Parent}}{{$hasname := false}}{{$hasparent := false}}
+		# required fields
+		{{range $i, $req := .RequiredFields}}{{$isname := ne $req "name"}}{{$isparent := ne $req "parent"}}{{if and $isname $isparent}}{{$req}} = nil{{else if $isname}}{{$hasname = $isname}}{{else if $isparent}}{{$hasparent = $isparent}}{{end}}{{end}}
+		{{if $hasname}}name = "{{$name}}"{{end}}
+		{{if $hasparent}}parent = "{{$parent}}"{{end}}	
+	}{{"\n\n"}}{{end}}`
+
+	resource, err := template.New(strings.ToLower(tfrName)).Parse(form)
+	// resource, err := resource.ParseFiles("./playbooks/.meta_template")
+	if err != nil {
+		log.Printf("FAILED TEMPLATE PARSE: %v", err)
+	} 
+	// log.Printf("HERE: %v", tfr)
+	file, err := os.OpenFile("./playbooks/templates.tf", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+	if err != nil {
+		log.Printf("ERROR OPENING FILE: %v", err)
+	}
+	// file = os.Stdin
+	// var data []byte
+	if err:= resource.Execute(file, tfr); err != nil {
+		log.Panic(err)
+	}
+	// if _, err = file.Read(data); err == nil {
+	// 	os.WriteFile("./playbooks/templates.tf", data, 0777)
+		
+	// } else {
+	// 	log.Printf("EMPTY %v", err)
+	// }
+
+	return "Done!"
+}
+

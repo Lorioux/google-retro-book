@@ -3,8 +3,6 @@ package core
 
 
 
-
-
 var (
 	// List directory nodes
 	NodeList []string

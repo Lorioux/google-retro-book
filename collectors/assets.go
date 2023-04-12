@@ -12,11 +12,7 @@ import (
 	cam "google.golang.org/api/cloudasset/v1"
 )
 
-var (
-	ActiveProjects []map[string]string
-
-	AllProjectsAssets map[string]Project
-)
+var AllProjectsAssets map[string]Project
 
 type AncestorsTree struct {
 	Name      string
@@ -38,68 +34,65 @@ func HandlLogs(a any){
 }
 
 // get all projects assets
-func GetAssetsByProjectId(c chan []map[string]Project) {
+func GetAssetsByProjectId(c chan []map[string]Project, id ...string) any {
 
 	camService, _ := cam.NewService(GetContext())
-	// ca := make(chan []string)
 	AllProjectsAssets = map[string]Project{}
-	// create parent folders for the resources in the projects listed previously
-	for _, project := range ActiveProjects {
-		// get the project ID
-		pid := project["projectId"]
+	if id == nil {
+		for _, project := range ActiveProjects {
+			// get the project ID
+			pid := project["projectId"]
 
-		// if !strings.Contains(pid, "cloudlabs") {
-		// 	continue
-		// }
-		
-
-		// list all assets in the project
-		call := camService.Assets.List(fmt.Sprintf("projects/%s", pid))
-		call.ContentType("RESOURCE")
-		var holder map[string]interface{}
-		var project = NewProjectInstance()
-		
-		// start the call
-		if response, err := call.Do(); err == nil {
-			
-			// go func() {
-				for index, assets := range response.Assets {
-
-					resolve, _ := assets.MarshalJSON()
-					// log.Println(resolve)
-	
-					if err := json .Unmarshal(resolve, &holder); err != nil {
-						log.Printf("[WARNING] %s: %v", err, assets)
-					}
-	
-					// log.Println(holder)
-					parent := holder["ancestors"].([]interface{})[0]
-	
-					key := parent.(string)
-					project.SetName(key)
-	
-					if index == 0 {
-						
-						project.SetParents(holder["ancestors"].([]interface{})[1:])
-						
-						// ca <- []string{holder["name"].(string)}
-					}
-					
-					// Add assets
-					project.AddAssets(holder["assetType"].(string), holder["name"].(string))
-					// Ancestors[key] = append(Ancestors[key], holder["assetType"])
-				}
-			// }()
-		} else {
-			log.Fatal("Failed to retrieve assets in the project: ", pid, "\n", err)
+			// if !strings.Contains(pid, "cloudlabs") {
+			// 	continue
+			// }
+			ListProjectAssets(pid, camService)
 		}
-		AllProjectsAssets[pid] = Project(project)
+	} else {
+		for _, i := range id {
+			ListProjectAssets(i, camService)
+		}
 	}
-	// for _, cc := range <- ca {
-	// 	HandlLogs(cc)
-	// }
-	// c <- AllProjectsAssets
-	log.Print(AllProjectsAssets["cloudlabs-371516"])
+	return AllProjectsAssets
+}
+
+func ListProjectAssets(id  string, camService *cam.Service) {
+	// list all assets in the project
+	call := camService.Assets.List(fmt.Sprintf("projects/%s", id))
+	call.ContentType("RESOURCE")
+	var holder map[string]interface{}
+	var project = NewProjectInstance()
+	// start the call
+	if response, err := call.Do(); err == nil {
+		// go func() {
+			for index, assets := range response.Assets {
+
+				resolve, _ := assets.MarshalJSON()
+				// log.Println(resolve)
+
+				if err := json .Unmarshal(resolve, &holder); err != nil {
+					log.Printf("[WARNING] %s: %v", err, assets)
+				}
+
+				// log.Println(holder)
+				parent := holder["ancestors"].([]interface{})[0]
+
+				key := parent.(string)
+				project.SetName(key)
+
+				if index == 0 {
+					project.SetParents(holder["ancestors"].([]interface{})[1:])
+					// ca <- []string{holder["name"].(string)}
+				}
+				// Add assets
+				project.AddAssets(holder["assetType"].(string), holder["name"].(string))
+				// Ancestors[key] = append(Ancestors[key], holder["assetType"])
+			}
+		// }()
+	} else {
+		log.Fatal("Failed to retrieve assets in the project: ", id, "\n", err)
+	}
+	AllProjectsAssets[id] = Project(project)
 }
 
 func FetchResourceNameById(s string) any {
@@ -113,9 +106,9 @@ func FetchResourceNameById(s string) any {
 			log.Fatal(err)
 		}
 		if project, err := cli.GetProject(GetContext(), req); err == nil {
-			holder = []string{project.DisplayName, project.ProjectId,}
+			holder = project.DisplayName //[]string{project.DisplayName, project.ProjectId,}
 		}
-		log.Default()
+		// log.Printf("Project: %v", holder)
 		defer cli.Close()
 	}
 
@@ -123,12 +116,12 @@ func FetchResourceNameById(s string) any {
 		req := &rpb.GetFolderRequest{Name: s}
 		cli, err := rsm.NewFoldersClient(GetContext())
 		if err != nil {
-			log.Fatal("[ERROR] Folders client failure...")
+			log.Fatalf("[ERROR] Folders client failure... %v", err)
 		}
 		defer cli.Close()
 		if folder, err := cli.GetFolder(GetContext(), req); err == nil {
 			holder = folder.DisplayName
-			log.Default()
+			
 		}
 	}
 
@@ -141,7 +134,7 @@ func FetchResourceNameById(s string) any {
 		defer cli.Close()
 		if org, err := cli.GetOrganization(GetContext(), req); err == nil {
 			holder = org.DisplayName
-			log.Default()
+			
 		}
 	}
 	return holder

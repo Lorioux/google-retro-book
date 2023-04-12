@@ -6,4 +6,5 @@ use (
 	./core
 	./mappings
 	./google/google
+	./playbooks
 )

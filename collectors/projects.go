@@ -9,7 +9,7 @@ import (
 	crm "google.golang.org/api/cloudresourcemanager/v1"
 )
 
-var LifecycleState any
+
 
 type Project struct {
 	Identifier map[string][]string
@@ -17,8 +17,11 @@ type Project struct {
 	Assets 	map[string][]string // {asset_type: [names...]}
 }
 
+var ActiveProjects []map[string]string
+var LifecycleState any
+
 // list all projects
-func GetProjects() {
+func GetProjects() []map[string]string {
 	if LifecycleState == nil {
 		LifecycleState = "ACTIVE"
 	}
@@ -43,7 +46,7 @@ func GetProjects() {
 	} else {
 		log.Fatal(err)
 	}
-
+	return ActiveProjects
 }
 
 func NewProjectInstance() Project {

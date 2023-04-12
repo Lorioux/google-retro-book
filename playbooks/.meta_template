@@ -1,0 +1,8 @@
+`"resource \"{{.TfrName}}\" \{
+  name      = \"{{.Name }}\"
+  parent    = \"{{.Parent}}\"
+  {{/* required fields go here */}}
+  {{range $i, $req := .RequiredFields }}
+  {{$req}}  = nil
+  {{end}}
+\}"`

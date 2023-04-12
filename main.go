@@ -1,26 +1,22 @@
 package main
 
 import (
-	"collectors"
-	"log"
-	"mappings"
+	"playbooks"
 )
 
 func main() {
-	// c := make(chan []map[string]collectors.Project)
-	// core.Run(c)
-	// core.CreateFolders(nil)
-	// defer Test(c)
-	// go test(collectors.AllProjectsAssets)
-	// log.Print("Hello")
-	// time.Sleep(10 * time.Second)
-	// log.Print(collectors.AllProjectsAssets)
+	// collectors.GetProjects()
+	// assets := collectors.GetAssetsByProjectId(nil, "cloudlabs-371516")
+	// log.Println(assets)
+	// for k, v := range assets.(map[string]collectors.Project) {
+	// 	log.Printf("KEY: %v\n%v", k, v.Parents)
+	// }
 	// mappings.CallProvider()
 	// mappings.ReadFileToReverse("mappings/data_mapping.json", "mappings/data_reverse.json")
-	mappings.ReadFileDoReverse("mappings/resource_mapping.json", "mappings/resource_reverse.json")
+	// mappings.ReadFileDoReverse("mappings/resource_mapping.json", "mappings/resource_reverse.json")
+	// tfResource := playbooks.TFResourceType{}
+	// tfResource.CheckDirectoryExistsOrCreate("./Factory", "DigitalFactory")
+
+	playbooks.ExecutePlayBook("./playbooks","assets.json")
 }
 
-func Test(a chan []map[string]collectors.Project){
-	result := <- a
-	log.Println(result)
-}
