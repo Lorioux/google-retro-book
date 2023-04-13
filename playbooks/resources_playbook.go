@@ -1,6 +1,7 @@
 package playbooks
 
 import (
+	"fmt"
 	"log"
 	"mappings"
 	"os"
@@ -82,8 +83,11 @@ type TFResourceType struct {
 	Parent string     
 	Name string 
 	RequiredFields []string // map[string]interface{}
-	TfrName string 
+	TfrType string
+	TfrLabel string
 }
+
+var KindResourceCounter = map[string]int{}
 
 var ancestors string
 
@@ -120,9 +124,12 @@ func (tfr *TFResourceType) SetRequiredFields (assetType string) {
 	} else {
 		return
 	}
+	KindResourceCounter[tfrType.(string)] += 1
 	// log.Printf("REQUIRED: %v", tfr.required_fields)
 	// if strings.EqualFold(tfrType.(string), "google_compute_instance") {
-		tfr.TfrName = tfrType.(string)
+		count := KindResourceCounter[tfrType.(string)]
+		tfr.TfrType = tfrType.(string)
+		tfr.TfrLabel = fmt.Sprint(tfrType,"_",count)
 		tfr.ConstructTFResourceTemplate(tfrType.(string))
 	// }
 }
@@ -130,15 +137,14 @@ func (tfr *TFResourceType) SetRequiredFields (assetType string) {
 
 
 func (tfr TFResourceType) ConstructTFResourceTemplate (tfrName string) string {
-	const form = `
-	{{block "main" .}}
-	resource "{{.TfrName}}" {
-		{{$name := .Name}}{{$parent := .Parent}}{{$hasname := false}}{{$hasparent := false}}
-		# required fields
-		{{range $i, $req := .RequiredFields}}{{$isname := ne $req "name"}}{{$isparent := ne $req "parent"}}{{if and $isname $isparent}}{{$req}} = nil{{else if $isname}}{{$hasname = $isname}}{{else if $isparent}}{{$hasparent = $isparent}}{{end}}{{end}}
-		{{if $hasname}}name = "{{$name}}"{{end}}
-		{{if $hasparent}}parent = "{{$parent}}"{{end}}	
-	}{{"\n\n"}}{{end}}`
+	const form = `{{block "main" .}}
+resource "{{.TfrType}}" "{{.TfrLabel}}"{
+	{{$name := .Name}}{{$parent := .Parent}}{{$hasname := false}}{{$hasparent := false}}
+	# required fields
+    {{range $i, $req := .RequiredFields}}{{$isname := ne $req "name"}}{{$isparent := ne $req "parent"}}{{if and $isname $isparent}}{{$req}} = nil{{"\n"}}{{else if $isname}}{{$hasname = $isname}}{{else if $isparent}}{{$hasparent = $isparent}}{{end}}{{end}}
+    {{if $hasname}}name = "{{$name}}"{{else}}{{end}}
+    {{if $hasparent}}parent = "{{$parent}}"{{end}}	
+}{{"\n\n"}}{{end}}`
 
 	resource, err := template.New(strings.ToLower(tfrName)).Parse(form)
 	// resource, err := resource.ParseFiles("./playbooks/.meta_template")

@@ -16,9 +16,9 @@ import (
 type Ancestors []string
 
 type Asset struct {
-	Ancestors Ancestors `json:ancestors`
-	AssetType string `json:asset_type`
-	Name string `json:name`
+	Ancestors Ancestors `json:"ancestors"`
+	AssetType string `json:"assetType"`
+	Name string `json:"name"`
 	// updateTime string `json:update_time`
 }
 
@@ -101,21 +101,21 @@ func SortOrgNodeAllowedResource(){
 	for index,con := range content {
 		resourceType := &TFResourceType{}
 
-		// if !strings.EqualFold(con.AssetType, "compute.googleapis.com/Instance"){
-		// 	continue
-		// }
+		if !strings.EqualFold(con.AssetType, "cloudresourcemanager.googleapis.com/Folder"){
+			continue
+		}
 		mux := &sync.RWMutex{}
-		// Check if resource type is in the allowed list. 
-		go DoWorkRoutine(OrgPrimaryResourceTypes, con, cn, index, resourceType, mux)
-		time.Sleep(5 * time.Second)
-	
+		// Check if resource type is in the allowed list.
+		time.Sleep(3 * time.Second) 
+		go doWorkOnCoRoutine(OrgPrimaryResourceTypes, con, cn, index, resourceType, mux)
 	}
 	ConstructResourceHierarchy()
 	defer mappings.UpdateUnsupportedResourceMap()
 }
 
 
-func DoWorkRoutine(rs []string, a Asset, cx chan int, index int, resourceType *TFResourceType, mux *sync.RWMutex) {
+func doWorkOnCoRoutine(rs []string, a Asset, cx chan int, index int, resourceType *TFResourceType, mux *sync.RWMutex) {
+	
 	mux.Lock()	
 	if name, err := url.QueryUnescape(a.PickResourceName()); err == nil {
 		resourceType.Name = name
@@ -125,7 +125,8 @@ func DoWorkRoutine(rs []string, a Asset, cx chan int, index int, resourceType *T
 	}
 	
 	resourceType.SetRequiredFields(a.AssetType)
-		mux.Unlock()
+	
+	mux.Unlock()
 	if index == len(content) - 1 {
 		cx <- -1
 		return
