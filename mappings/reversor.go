@@ -18,9 +18,10 @@ var resourceMapObj, err = readMappingsFile();
 
 type ReverseMapType map[string]string
 
+
 //Pick a json file then reverse the key and value
 //Save the result as json file
-func DoReverse(dsfile string) {
+func DoReverse(dsfile ...string) {
     
     if ; err != nil {
         panic(err)
@@ -52,6 +53,7 @@ func DoReverse(dsfile string) {
     // fmt.Println("Done!")
 }
 
+
 func readMappingsFile() (map[string]interface{}, error) {
     // Read the JSON file.
     file, err := os.ReadFile(full_path)
@@ -63,27 +65,27 @@ func readMappingsFile() (map[string]interface{}, error) {
         return nil, err
     }
     UnsupportedResourceMap = mapObj["unsupported"].(map[string]interface{})
+
     return mapObj, nil
 }
 
-func MatchTFRNameByCloudRSType(cloudRSType string) any {
-    
-    
-    if  err != nil {
-        panic(err)
-    }
-    // for k,v := range mapObj["reverse"] {
-        
-    // }
-    v := resourceMapObj["reverse"].(map[string]interface{})[cloudRSType]; 
 
-    if v == nil && UnsupportedResourceMap[cloudRSType] == nil {
-        log.Printf("UNSUPPORTED RESOURCE TYPE: %v ----- %v", v , cloudRSType )
-        UnsupportedResourceMap[cloudRSType] = "YES"
-        return nil
+func MatchTFRNameByCloudRSType(cloudRSType string) any {
+
+    v := resourceMapObj["reverse"].(map[string]interface{})[cloudRSType]; 
+    
+    switch v.(type) {
+    case nil : {
+        if UnsupportedResourceMap[cloudRSType] == nil {
+            log.Printf("REQUIRED TF UNSUPPORTED RESOURCE TYPE: %v ----- %v", v , cloudRSType )
+            UnsupportedResourceMap[cloudRSType] = "YES"
+        }
+        return ""
     }
-    return v
+    default: return v
+    }
 }
+
 
 func UpdateUnsupportedResourceMap() {
     resourceMapObj["unsupported"] = UnsupportedResourceMap

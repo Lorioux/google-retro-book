@@ -137,5 +137,8 @@ func FetchResourceNameById(s string) any {
 			
 		}
 	}
+	if holder == nil{
+		log.Panicf("FAILED TO RETRIEVE DISPLAY NAME FOR ID: %v", s)
+	}
 	return holder
 }

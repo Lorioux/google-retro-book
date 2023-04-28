@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
+	"os"
 	"playbooks"
 )
 
@@ -13,10 +16,18 @@ func main() {
 	// }
 	// mappings.CallProvider()
 	// mappings.ReadFileToReverse("mappings/data_mapping.json", "mappings/data_reverse.json")
-	// mappings.ReadFileDoReverse("mappings/resource_mapping.json", "mappings/resource_reverse.json")
+	// mappings.DoReverse("mappings/resource_mapping.json")
+	// mappings.DoReverse()
 	// tfResource := playbooks.TFResourceType{}
 	// tfResource.CheckDirectoryExistsOrCreate("./Factory", "DigitalFactory")
 
 	playbooks.ExecutePlayBook("./playbooks","assets.json")
+	// defer log.Println(playbooks.ListOfAllTFResourcesPerPath)
+	defer func(){
+		if data, err := json.Marshal(playbooks.ListOfAllTFResourcesPerPath); err == nil {
+			if os.WriteFile("./resources.json", data, 0777) != nil {
+				log.Printf("FAILED TO CREATE THE OUTPUT FILE")
+			}
+		}
+	}()
 }
-
